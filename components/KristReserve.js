@@ -47,8 +47,6 @@ export default function KristReserve() {
     setLoading(true);
 
     try {
-      // Calls OUR OWN backend route, not Anthropic directly.
-      // The API key never touches the browser.
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,4 +125,128 @@ export default function KristReserve() {
             </button>
             <button
               className={`kr-tab ${view === "dashboard" ? "active" : ""}`}
-              onClick={() =>
+              onClick={() => setView("dashboard")}
+            >
+              Leads{leads.length > 0 ? ` (${leads.length})` : ""}
+            </button>
+          </div>
+          <div className="kr-status">
+            <span className="kr-status-dot" />
+            Online
+          </div>
+        </div>
+      </div>
+
+      {view === "dashboard" ? (
+        <div className="kr-dashboard">
+          {leads.length === 0 ? (
+            <div className="kr-empty">
+              <div className="kr-empty-title">No leads captured yet</div>
+              <div className="kr-empty-sub">
+                Completed conversations will appear here as qualified leads.
+              </div>
+            </div>
+          ) : (
+            <div className="kr-lead-list">
+              {leads.map((lead) => (
+                <div
+                  className={`kr-lead-card ${
+                    lead.urgency?.toLowerCase().includes("urgent") ? "urgent" : ""
+                  }`}
+                  key={lead.id}
+                >
+                  <div className="kr-lead-top">
+                    <span className="kr-lead-route">{lead.route || "Route not specified"}</span>
+                    {lead.urgency?.toLowerCase().includes("urgent") && (
+                      <span className="kr-urgent-tag">Urgent</span>
+                    )}
+                  </div>
+                  <div className="kr-lead-grid">
+                    <div className="kr-lead-field">
+                      <span className="kr-lead-label">Date(s)</span>
+                      <span className="kr-lead-value">{lead["date(s)"] || "—"}</span>
+                    </div>
+                    <div className="kr-lead-field">
+                      <span className="kr-lead-label">Passengers</span>
+                      <span className="kr-lead-value">{lead.passengers || "—"}</span>
+                    </div>
+                    <div className="kr-lead-field">
+                      <span className="kr-lead-label">Aircraft pref.</span>
+                      <span className="kr-lead-value">{lead["aircraft preference"] || "—"}</span>
+                    </div>
+                    <div className="kr-lead-field">
+                      <span className="kr-lead-label">Budget</span>
+                      <span className="kr-lead-value">{lead["budget indication"] || "—"}</span>
+                    </div>
+                    <div className="kr-lead-field wide">
+                      <span className="kr-lead-label">Special requests</span>
+                      <span className="kr-lead-value">{lead["special requests"] || "—"}</span>
+                    </div>
+                    <div className="kr-lead-field wide">
+                      <span className="kr-lead-label">Contact</span>
+                      <span className="kr-lead-value">{lead.contact || "—"}</span>
+                    </div>
+                  </div>
+                  <div className="kr-lead-time">
+                    Captured{" "}
+                    {lead.capturedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="kr-chat" ref={scrollRef}>
+            {messages.map((m, i) => (
+              <div className={`msg-row ${m.role}`} key={i}>
+                <div className="msg-bubble">{renderMessageContent(m.content)}</div>
+              </div>
+            ))}
+            {loading && (
+              <div className="msg-row assistant">
+                <div className="msg-bubble kr-thinking">
+                  <span className="radar" />
+                  <span className="kr-thinking-text">KRIST is typing</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {messages.length === 1 && (
+            <div className="kr-starters">
+              {SUGGESTED_STARTERS.map((s, i) => (
+                <button className="starter-chip" key={i} onClick={() => sendMessage(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="kr-inputbar">
+            <input
+              className="kr-input"
+              placeholder="Message KRIST..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") sendMessage(input);
+              }}
+            />
+            <button
+              className="kr-send"
+              disabled={loading || !input.trim()}
+              onClick={() => sendMessage(input)}
+              aria-label="Send message"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12L20 4L13 20L11 13L4 12Z" fill="#0B1520" />
+              </svg>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
